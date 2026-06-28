@@ -1,0 +1,139 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Вход в аккаунт - MegaMart{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="row justify-content-center align-items-center min-vh-75 py-5">
+    <div class="col-md-6 col-lg-5">
+      
+      <!-- Login Card -->
+      <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
+        <!-- Header -->
+        <div class="card-header bg-primary text-white text-center py-4" 
+             style="background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;">
+          <div class="mb-3">
+            <i class="bi bi-person-circle" style="font-size: 3rem;"></i>
+          </div>
+          <h3 class="card-title mb-1 fw-bold">С возвращением!</h3>
+          <p class="mb-0 opacity-90">Войдите в свой аккаунт</p>
+        </div>
+
+        <div class="card-body p-4 p-md-5">
+          <form method="post" action="{% url 'users:login' %}" novalidate>
+            {% csrf_token %}
+            
+            {% if form.errors %}
+              <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                <strong>Ошибка!</strong> Проверьте правильность ввода данных.
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+              </div>
+            {% endif %}
+
+            {% if next %}
+              <input type="hidden" name="next" value="{{ next }}">
+            {% endif %}
+
+            <!-- Username Field -->
+            <div class="mb-3">
+              <label for="id_username" class="form-label fw-semibold">
+                <i class="bi bi-person me-1"></i>Имя пользователя или Email
+              </label>
+              <div class="input-group">
+                <span class="input-group-text bg-light border-end-0">
+                  <i class="bi bi-person text-muted"></i>
+                </span>
+                <input type="text" 
+                       class="form-control border-start-0 ps-0 {% if form.username.errors %}is-invalid{% endif %}" 
+                       id="id_username" 
+                       name="username" 
+                       placeholder="username или email"
+                       value="{{ form.username.value|default:'' }}"
+                       required 
+                       autofocus>
+                {% if form.username.errors %}
+                  <div class="invalid-feedback">{{ form.username.errors.0 }}</div>
+                {% endif %}
+              </div>
+            </div>
+
+            <!-- Password Field -->
+            <div class="mb-4">
+              <label for="id_password" class="form-label fw-semibold">
+                <i class="bi bi-lock me-1"></i>Пароль
+              </label>
+              <div class="input-group">
+                <span class="input-group-text bg-light border-end-0">
+                  <i class="bi bi-lock text-muted"></i>
+                </span>
+                <input type="password" 
+                       class="form-control border-start-0 ps-0 {% if form.password.errors %}is-invalid{% endif %}" 
+                       id="id_password" 
+                       name="password" 
+                       placeholder="••••••••"
+                       required>
+                <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+                  <i class="bi bi-eye"></i>
+                </button>
+                {% if form.password.errors %}
+                  <div class="invalid-feedback">{{ form.password.errors.0 }}</div>
+                {% endif %}
+              </div>
+            </div>
+
+            <!-- Remember & Forgot -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="remember" name="remember">
+                <label class="form-check-label text-secondary" for="remember">
+                  Запомнить меня
+                </label>
+              </div>
+              <a href="{% url 'users:password_reset' %}" class="text-decoration-none small">
+                Забыли пароль?
+              </a>
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit" class="btn btn-primary w-100 py-3 mb-3 fw-semibold">
+              <i class="bi bi-box-arrow-in-right me-2"></i>Войти
+            </button>
+
+            <!-- Register Link -->
+            <div class="text-center">
+              <p class="mb-0 text-secondary">
+                Ещё нет аккаунта? 
+                <a href="{% url 'users:register' %}" class="text-decoration-none fw-semibold">
+                  Зарегистрироваться
+                </a>
+              </p>
+            </div>
+          </form>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+// Toggle password visibility
+document.getElementById('togglePassword').addEventListener('click', function() {
+  const passwordInput = document.getElementById('id_password');
+  const icon = this.querySelector('i');
+  if (passwordInput.type === 'password') {
+    passwordInput.type = 'text';
+    icon.classList.replace('bi-eye', 'bi-eye-slash');
+  } else {
+    passwordInput.type = 'password';
+    icon.classList.replace('bi-eye-slash', 'bi-eye');
+  }
+});
+</script>
+
+<style>
+.min-vh-75 { min-height: 75vh; }
+</style>
+{% endblock %}

@@ -1,0 +1,75 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="{{ seo_meta.description|default:'Интернет-магазин сантехники MegaMart' }}">
+    <title>{% block title %}{{ page_title|default:'MegaMart' }}{% endblock %}</title>
+    
+    <!-- Bootstrap 5 & Icons (локально, без CDN) -->
+    <link href="{% static 'css/bootstrap.min.css' %}" rel="stylesheet">
+    <link href="{% static 'css/bootstrap-icons.css' %}" rel="stylesheet">
+    
+    <!-- Google Fonts (оставлен CDN – не блокируется) -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <link href="{% static 'css/custom.css' %}" rel="stylesheet">
+    
+    <!-- Inputmask (локально) -->
+    <script src="{% static 'js/inputmask.min.js' %}"></script>
+    
+    {% block extra_css %}{% endblock %}
+    
+    <link rel="icon" href="{% static 'images/favicon.ico' %}" type="image/x-icon">
+</head>
+<body class="d-flex flex-column min-vh-100">
+
+    <a href="#main-content" class="visually-hidden-focusable bg-primary text-white p-2 position-absolute top-0 start-0 z-3">
+        Перейти к основному контенту
+    </a>
+
+    {% include 'partials/_header.html' %}
+
+    {% if messages %}
+        {% include 'partials/_messages.html' %}
+    {% endif %}
+
+    <main id="main-content" class="flex-grow-1 py-4">
+        {% block content %}{% endblock %}
+    </main>
+
+    {% include 'partials/_footer.html' %}
+
+    <!-- Bootstrap JS (локально) -->
+    <script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
+    
+    <!-- Пользовательские скрипты -->
+    <script src="{% static 'js/main.js' %}" defer></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var phoneInputs = document.querySelectorAll('input[type="tel"], .phone-mask');
+            phoneInputs.forEach(function(input) {
+                Inputmask({
+                    mask: "+7 (999) 999-99-99",
+                    showMaskOnHover: false,
+                    showMaskOnFocus: true,
+                    placeholder: "_",
+                    clearIncomplete: false,
+                    greedy: false
+                }).mask(input);
+            });
+        });
+    </script>
+    
+    {% block extra_js %}{% endblock %}
+    
+    {% if seo_jsonld_schemas %}
+        {% for schema in seo_jsonld_schemas %}
+            <script type="application/ld+json">{{ schema|safe }}</script>
+        {% endfor %}
+    {% endif %}
+</body>
+</html>

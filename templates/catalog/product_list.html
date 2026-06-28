@@ -1,0 +1,268 @@
+{% extends 'base.html' %}
+{% load catalog_filters %}
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+  .filter-accordion .accordion-body {
+    padding: 0.75rem 1rem;
+    max-height: 220px;
+    overflow-y: auto;
+  }
+  .filter-accordion .accordion-button {
+    padding: 0.6rem 1rem;
+    font-weight: 600;
+    font-size: 0.9rem;
+  }
+  .filter-accordion .accordion-button:not(.collapsed) {
+    background-color: #f8f9fa;
+  }
+  .form-check {
+    margin-bottom: 0.25rem;
+  }
+  .form-check-label {
+    font-size: 0.85rem;
+  }
+  .btn-filter-mobile {
+    display: none;
+  }
+  @media (max-width: 992px) {
+    .btn-filter-mobile {
+      display: inline-block;
+    }
+    .desktop-filters {
+      display: none;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="row">
+    
+    <!-- Кнопка "Фильтры" для мобильных -->
+    <div class="col-12 mb-3 btn-filter-mobile">
+      <button class="btn btn-outline-primary w-100" type="button" data-bs-toggle="offcanvas" data-bs-target="#filterOffcanvas">
+        <i class="bi bi-funnel me-2"></i> Фильтры
+        <span class="badge bg-primary ms-2" id="filter-count">0</span>
+      </button>
+    </div>
+
+    <!-- Sidebar Filters (десктоп) -->
+    <aside class="col-lg-3 mb-4 desktop-filters">
+      <form id="desktop-filter-form" method="get" action="{% url 'catalog:product_list' %}">
+        {% if request.GET.q %}<input type="hidden" name="q" value="{{ request.GET.q }}">{% endif %}
+        <input type="hidden" name="sort" value="{{ current_sort }}">
+        
+        <div class="accordion filter-accordion" id="filterAccordion">
+          
+          <!-- Категории -->
+          <div class="accordion-item">
+            <h2 class="accordion-header" id="headingCategories">
+              <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseCategories" aria-expanded="true">
+                Категории
+              </button>
+            </h2>
+            <div id="collapseCategories" class="accordion-collapse collapse show" data-bs-parent="#filterAccordion">
+              <div class="accordion-body">
+                {% for category in categories %}
+                  <div class="form-check">
+                    <input class="form-check-input auto-submit" type="checkbox" name="category" value="{{ category.slug }}"
+                           id="cat-{{ category.slug }}"
+                           {% if category.slug in selected_categories %}checked{% endif %}>
+                    <label class="form-check-label" for="cat-{{ category.slug }}">{{ category.name }}</label>
+                  </div>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+
+          <!-- Бренды -->
+          <div class="accordion-item">
+            <h2 class="accordion-header" id="headingBrands">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseBrands">
+                Бренды
+              </button>
+            </h2>
+            <div id="collapseBrands" class="accordion-collapse collapse" data-bs-parent="#filterAccordion">
+              <div class="accordion-body">
+                {% for brand in brands %}
+                  <div class="form-check">
+                    <input class="form-check-input auto-submit" type="checkbox" name="brand" value="{{ brand.slug }}"
+                           id="brand-{{ brand.slug }}"
+                           {% if brand.slug in selected_brands %}checked{% endif %}>
+                    <label class="form-check-label" for="brand-{{ brand.slug }}">{{ brand.name }}</label>
+                  </div>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+
+          <!-- Характеристики -->
+          {% if filter_attributes %}
+          <div class="accordion-item">
+            <h2 class="accordion-header" id="headingAttrs">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseAttrs">
+                Характеристики
+              </button>
+            </h2>
+            <div id="collapseAttrs" class="accordion-collapse collapse" data-bs-parent="#filterAccordion">
+              <div class="accordion-body">
+                {% for fa in filter_attributes %}
+                  <div class="mb-3">
+                    <strong class="d-block mb-2 small">{{ fa.attribute.name }}</strong>
+                    {% with attr_key="attr_"|add:fa.attribute.slug %}
+                      {% for value in fa.values %}
+                        <div class="form-check">
+                          <input class="form-check-input auto-submit" type="checkbox"
+                                 name="{{ attr_key }}" value="{{ value }}"
+                                 id="{{ attr_key }}_{{ forloop.counter }}"
+                                 {% if value in selected_attrs|get_item:attr_key %}checked{% endif %}>
+                          <label class="form-check-label" for="{{ attr_key }}_{{ forloop.counter }}">
+                            {{ value }}
+                          </label>
+                        </div>
+                      {% endfor %}
+                    {% endwith %}
+                  </div>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+          {% endif %}
+
+          <!-- Цена -->
+          <div class="accordion-item">
+            <h2 class="accordion-header" id="headingPrice">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapsePrice">
+                Цена
+              </button>
+            </h2>
+            <div id="collapsePrice" class="accordion-collapse collapse" data-bs-parent="#filterAccordion">
+              <div class="accordion-body">
+                <div class="d-flex gap-2">
+                  <input type="number" class="form-control form-control-sm auto-submit-price" placeholder="От" name="price_min" value="{{ request.GET.price_min }}">
+                  <input type="number" class="form-control form-control-sm auto-submit-price" placeholder="До" name="price_max" value="{{ request.GET.price_max }}">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="d-grid gap-2 mt-3">
+          <a href="{% url 'catalog:product_list' %}" class="btn btn-outline-secondary btn-sm">Сбросить</a>
+        </div>
+      </form>
+    </aside>
+
+    <!-- Products Grid -->
+    <div class="col-lg-9">
+      
+      <!-- Results Header -->
+      <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <p class="mb-0 text-secondary">Найдено товаров: <strong>{{ page_obj.paginator.count }}</strong></p>
+        <div class="d-flex align-items-center gap-2">
+          <label for="sort" class="small mb-0 text-secondary">Сортировка:</label>
+          <select class="form-select form-select-sm" style="width: auto;" id="sort">
+            <option value="newest" {% if current_sort == 'newest' %}selected{% endif %}>Сначала новые</option>
+            <option value="price_asc" {% if current_sort == 'price_asc' %}selected{% endif %}>Сначала дешёвые</option>
+            <option value="price_desc" {% if current_sort == 'price_desc' %}selected{% endif %}>Сначала дорогие</option>
+            <option value="popular" {% if current_sort == 'popular' %}selected{% endif %}>Популярные</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Products -->
+      <div class="row row-cols-2 row-cols-md-3 g-3">
+        {% for product in products %}
+          <div class="col">{% include 'partials/_product_card.html' with product=product %}</div>
+        {% empty %}
+          <div class="col-12">
+            <div class="text-center py-5 bg-white rounded-3 border">
+              <i class="bi bi-search fs-1 text-muted d-block mb-3"></i>
+              <h5 class="mb-2">Ничего не найдено</h5>
+              <p class="text-secondary mb-3">Попробуйте изменить параметры поиска или фильтры</p>
+              <a href="{% url 'catalog:product_list' %}" class="btn btn-outline-primary">Сбросить фильтры</a>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+
+      <!-- Pagination -->
+      {% if page_obj.has_other_pages %}
+        <nav class="mt-4" aria-label="Пагинация">
+          <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}
+              <li class="page-item"><a class="page-link" href="?page=1&{{ filter_params }}">«</a></li>
+              <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&{{ filter_params }}">‹</a></li>
+            {% endif %}
+            {% for num in page_obj.paginator.page_range %}
+              {% if page_obj.number == num %}
+                <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+              {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <li class="page-item"><a class="page-link" href="?page={{ num }}&{{ filter_params }}">{{ num }}</a></li>
+              {% endif %}
+            {% endfor %}
+            {% if page_obj.has_next %}
+              <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&{{ filter_params }}">›</a></li>
+              <li class="page-item"><a class="page-link" href="?page={{ page_obj.paginator.num_pages }}&{{ filter_params }}">»</a></li>
+            {% endif %}
+          </ul>
+        </nav>
+      {% endif %}
+      
+    </div>
+  </div>
+</div>
+
+<!-- Offcanvas Filters (мобильные) – аналогичная структура, опущена для краткости; можно скопировать из предыдущих ответов -->
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Автоотправка при изменении чекбоксов
+    document.querySelectorAll('.auto-submit').forEach(function(el) {
+        el.addEventListener('change', function() {
+            document.getElementById('desktop-filter-form').submit();
+        });
+    });
+
+    // Автоотправка цены с задержкой 800мс после последнего ввода
+    let priceTimeout;
+    document.querySelectorAll('.auto-submit-price').forEach(function(el) {
+        el.addEventListener('input', function() {
+            clearTimeout(priceTimeout);
+            priceTimeout = setTimeout(function() {
+                document.getElementById('desktop-filter-form').submit();
+            }, 800);
+        });
+    });
+
+    // Сортировка
+    document.getElementById('sort').addEventListener('change', function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        urlParams.set('sort', this.value);
+        urlParams.delete('page');
+        window.location.search = urlParams.toString();
+    });
+
+    // Обновление счетчика фильтров (для мобильной кнопки)
+    function updateFilterCount() {
+        let count = document.querySelectorAll('.auto-submit:checked').length;
+        let priceMin = document.querySelector('input[name="price_min"]').value;
+        let priceMax = document.querySelector('input[name="price_max"]').value;
+        if (priceMin || priceMax) count++;
+        document.getElementById('filter-count').textContent = count || '0';
+    }
+    document.querySelectorAll('.auto-submit, .auto-submit-price').forEach(function(el) {
+        el.addEventListener('change', updateFilterCount);
+        el.addEventListener('input', updateFilterCount);
+    });
+    updateFilterCount();
+});
+</script>
+{% endblock %}

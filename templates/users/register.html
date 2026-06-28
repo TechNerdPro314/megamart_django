@@ -1,0 +1,224 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Регистрация - MegaMart{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="row justify-content-center py-5">
+    <div class="col-md-8 col-lg-7 col-xl-6">
+      
+      <!-- Register Card -->
+      <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
+        <!-- Header -->
+        <div class="card-header bg-success text-white text-center py-4" 
+             style="background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%) !important;">
+          <div class="mb-3">
+            <i class="bi bi-person-plus-fill" style="font-size: 3rem;"></i>
+          </div>
+          <h3 class="card-title mb-1 fw-bold">Создать аккаунт</h3>
+          <p class="mb-0 opacity-90">Присоединяйтесь к MegaMart</p>
+        </div>
+
+        <div class="card-body p-4 p-md-5">
+          <form method="post" action="{% url 'users:register' %}" novalidate>
+            {% csrf_token %}
+
+            {% if form.errors %}
+              <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                <strong>Ошибка!</strong> Исправьте ошибки ниже.
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+              </div>
+            {% endif %}
+
+            <!-- Username -->
+            <div class="mb-3">
+              <label for="id_username" class="form-label fw-semibold">
+                <i class="bi bi-person me-1"></i>Имя пользователя
+              </label>
+              <div class="input-group">
+                <span class="input-group-text bg-light">
+                  <i class="bi bi-person text-muted"></i>
+                </span>
+                <input type="text" 
+                       class="form-control {% if form.username.errors %}is-invalid{% endif %}" 
+                       id="id_username" 
+                       name="username" 
+                       placeholder="username"
+                       value="{{ form.username.value|default:'' }}"
+                       required>
+                {% if form.username.errors %}
+                  <div class="invalid-feedback">{{ form.username.errors.0 }}</div>
+                {% endif %}
+              </div>
+            </div>
+
+            <!-- Name Fields Row -->
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label for="id_first_name" class="form-label fw-semibold">Имя</label>
+                <input type="text" 
+                       class="form-control {% if form.first_name.errors %}is-invalid{% endif %}" 
+                       id="id_first_name" 
+                       name="first_name" 
+                       placeholder="Иван"
+                       value="{{ form.first_name.value|default:'' }}"
+                       required>
+                {% if form.first_name.errors %}
+                  <div class="invalid-feedback">{{ form.first_name.errors.0 }}</div>
+                {% endif %}
+              </div>
+              <div class="col-md-6 mb-3">
+                <label for="id_last_name" class="form-label fw-semibold">Фамилия</label>
+                <input type="text" 
+                       class="form-control {% if form.last_name.errors %}is-invalid{% endif %}" 
+                       id="id_last_name" 
+                       name="last_name" 
+                       placeholder="Петров"
+                       value="{{ form.last_name.value|default:'' }}"
+                       required>
+                {% if form.last_name.errors %}
+                  <div class="invalid-feedback">{{ form.last_name.errors.0 }}</div>
+                {% endif %}
+              </div>
+            </div>
+
+            <!-- Email -->
+            <div class="mb-3">
+              <label for="id_email" class="form-label fw-semibold">
+                <i class="bi bi-envelope me-1"></i>Email адрес
+              </label>
+              <div class="input-group">
+                <span class="input-group-text bg-light">
+                  <i class="bi bi-envelope text-muted"></i>
+                </span>
+                <input type="email" 
+                       class="form-control {% if form.email.errors %}is-invalid{% endif %}" 
+                       id="id_email" 
+                       name="email" 
+                       placeholder="your@email.com"
+                       value="{{ form.email.value|default:'' }}"
+                       required>
+                {% if form.email.errors %}
+                  <div class="invalid-feedback">{{ form.email.errors.0 }}</div>
+                {% endif %}
+                <div class="form-text">Мы никогда не поделимся вашим email</div>
+              </div>
+            </div>
+
+            <!-- Phone -->
+            <div class="mb-3">
+              <label for="id_phone" class="form-label fw-semibold">
+                <i class="bi bi-phone me-1"></i>Телефон
+              </label>
+              <input type="tel" 
+                     class="form-control {% if form.phone.errors %}is-invalid{% endif %}" 
+                     id="id_phone" 
+                     name="phone" 
+                     placeholder="+7 (___) ___-__-__"
+                     value="{{ form.phone.value|default:'' }}">
+              {% if form.phone.errors %}
+                <div class="invalid-feedback">{{ form.phone.errors.0 }}</div>
+              {% endif %}
+            </div>
+
+            <!-- Password -->
+            <div class="mb-3">
+              <label for="id_password1" class="form-label fw-semibold">
+                <i class="bi bi-lock me-1"></i>Пароль
+              </label>
+              <div class="input-group">
+                <span class="input-group-text bg-light">
+                  <i class="bi bi-lock text-muted"></i>
+                </span>
+                <input type="password" 
+                       class="form-control {% if form.password1.errors %}is-invalid{% endif %}" 
+                       id="id_password1" 
+                       name="password1" 
+                       placeholder="••••••••"
+                       required>
+                <button class="btn btn-outline-secondary" type="button" id="togglePassword1">
+                  <i class="bi bi-eye"></i>
+                </button>
+                {% if form.password1.errors %}
+                  <div class="invalid-feedback">{{ form.password1.errors.0 }}</div>
+                {% endif %}
+              </div>
+              <div class="form-text">Минимум 8 символов, включая буквы и цифры</div>
+            </div>
+
+            <!-- Confirm Password -->
+            <div class="mb-4">
+              <label for="id_password2" class="form-label fw-semibold">
+                <i class="bi bi-lock-fill me-1"></i>Подтвердите пароль
+              </label>
+              <div class="input-group">
+                <span class="input-group-text bg-light">
+                  <i class="bi bi-lock-fill text-muted"></i>
+                </span>
+                <input type="password" 
+                       class="form-control {% if form.password2.errors %}is-invalid{% endif %}" 
+                       id="id_password2" 
+                       name="password2" 
+                       placeholder="••••••••"
+                       required>
+                <button class="btn btn-outline-secondary" type="button" id="togglePassword2">
+                  <i class="bi bi-eye"></i>
+                </button>
+                {% if form.password2.errors %}
+                  <div class="invalid-feedback">{{ form.password2.errors.0 }}</div>
+                {% endif %}
+              </div>
+            </div>
+
+            <!-- Terms -->
+            <div class="form-check mb-4">
+              <input class="form-check-input" type="checkbox" id="terms" name="terms" required>
+              <label class="form-check-label text-secondary" for="terms">
+                Я согласен с <a href="{% url 'info_terms' %}" class="text-decoration-none">условиями использования</a> 
+                и <a href="{% url 'info_privacy' %}" class="text-decoration-none">политикой конфиденциальности</a>
+              </label>
+            </div>
+
+            <!-- Submit -->
+            <button type="submit" class="btn btn-success w-100 py-3 mb-3 fw-semibold">
+              <i class="bi bi-check-circle me-2"></i>Создать аккаунт
+            </button>
+
+            <!-- Login Link -->
+            <div class="text-center">
+              <p class="mb-0 text-secondary">
+                Уже есть аккаунт? 
+                <a href="{% url 'users:login' %}" class="text-decoration-none fw-semibold">
+                  Войти
+                </a>
+              </p>
+            </div>
+          </form>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+// Toggle password visibility
+function setupToggle(id) {
+  document.getElementById(id).addEventListener('click', function() {
+    const input = this.parentElement.querySelector('input[type="password"], input[type="text"]');
+    const icon = this.querySelector('i');
+    if (input.type === 'password') {
+      input.type = 'text';
+      icon.classList.replace('bi-eye', 'bi-eye-slash');
+    } else {
+      input.type = 'password';
+      icon.classList.replace('bi-eye-slash', 'bi-eye');
+    }
+  });
+}
+setupToggle('togglePassword1');
+setupToggle('togglePassword2');
+</script>
+{% endblock %}

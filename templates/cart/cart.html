@@ -1,0 +1,184 @@
+{% extends 'base.html' %}
+{% block title %}Корзина - MegaMart{% endblock %}
+
+{% block content %}
+<div class="container">
+  <h1 class="h3 mb-4">
+    <i class="bi bi-cart3 me-2"></i>Ваша корзина
+  </h1>
+  
+  {% if cart.get_total_quantity > 0 %}
+    <div class="row g-4">
+      
+      <!-- Левая колонка: список товаров -->
+      <div class="col-lg-8">
+        {% for item in cart %}
+          <div class="cart-item animate-fade-in-up">
+            <div class="row align-items-center g-3">
+              <!-- Изображение -->
+              <div class="col-4 col-md-3 col-xl-2">
+                <a href="{{ item.product.get_absolute_url }}">
+                  {% if item.product.main_image %}
+                    <img src="{{ item.product.main_image.url }}" 
+                         alt="{{ item.product.name }}" 
+                         class="cart-item-img w-100">
+                  {% else %}
+                    <div class="cart-item-img d-flex align-items-center justify-content-center bg-light w-100">
+                      <i class="bi bi-image text-muted fs-3"></i>
+                    </div>
+                  {% endif %}
+                </a>
+              </div>
+
+              <!-- Название и бренд -->
+              <div class="col-8 col-md-9 col-xl-4">
+                <a href="{{ item.product.get_absolute_url }}" class="text-decoration-none">
+                  <h5 class="cart-item-title text-truncate-2 mb-1">{{ item.product.name }}</h5>
+                </a>
+                {% if item.product.brand %}
+                  <p class="text-muted small mb-2">{{ item.product.brand.name }}</p>
+                {% endif %}
+                <div class="cart-item-price d-md-none">{{ item.product.price|floatformat:0 }} ₽ / шт.</div>
+              </div>
+
+              <!-- Цена за единицу (на десктопе) -->
+              <div class="d-none d-md-block col-md-4 col-xl-2 text-center">
+                <span class="cart-item-price">{{ item.product.price|floatformat:0 }} ₽</span>
+                <small class="text-muted d-block">за шт.</small>
+              </div>
+
+              <!-- Количество – надёжное решение без JavaScript -->
+              <div class="col-6 col-md-5 col-xl-2">
+                <form method="post" action="{% url 'cart:update_cart' item.product.id %}" class="d-flex justify-content-center">
+                  {% csrf_token %}
+                  <div class="input-group input-group-sm quantity-input">
+                    <!-- Кнопка «–»: type="submit", name="quantity", value на 1 меньше -->
+                    <button type="submit" class="btn btn-outline-secondary" 
+                            name="quantity" value="{{ item.quantity|add:'-1' }}"
+                            {% if item.quantity <= 1 %}disabled{% endif %}>−</button>
+                    <!-- Поле ввода (только для отображения) – не используется при отправке -->
+                    <input type="text" class="form-control text-center" 
+                           value="{{ item.quantity }}" readonly disabled>
+                    <!-- Кнопка «+»: type="submit", name="quantity", value на 1 больше -->
+                    <button type="submit" class="btn btn-outline-secondary" 
+                            name="quantity" value="{{ item.quantity|add:'1' }}"
+                            {% if item.quantity >= item.product.stock %}disabled{% endif %}>+</button>
+                  </div>
+                </form>
+              </div>
+
+              <!-- Сумма за позицию -->
+              <div class="col-4 col-md-3 col-xl-1 text-end d-none d-md-block">
+                <span class="fw-bold text-nowrap">{{ item.total_price|floatformat:0 }} ₽</span>
+              </div>
+
+              <!-- Кнопка удаления -->
+              <div class="col-2 col-md-1 col-xl-1 text-end">
+                <form method="post" action="{% url 'cart:remove_from_cart' item.product.id %}">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-link text-danger p-0" 
+                          aria-label="Удалить товар">
+                    <i class="bi bi-trash fs-5"></i>
+                  </button>
+                </form>
+              </div>
+            </div>
+            <!-- Мобильная сумма (видна только на мобильных) -->
+            <div class="row d-md-none mt-2">
+              <div class="col-8 offset-4 text-end">
+                <span class="fw-bold">{{ item.total_price|floatformat:0 }} ₽</span>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+
+        <!-- Промокод -->
+        <div class="bg-white rounded-3 p-3 mt-3 border shadow-sm">
+          <form method="post" action="{% url 'cart:apply_coupon' %}" class="d-flex gap-2 flex-wrap">
+            {% csrf_token %}
+            <input type="text" name="coupon" class="form-control" 
+                   placeholder="Промокод" maxlength="50" style="max-width: 250px;">
+            <button type="submit" class="btn btn-outline-primary">Применить</button>
+          </form>
+          {% if cart.get_coupon %}
+            <div class="d-flex justify-content-between align-items-center mt-2 p-2 bg-success bg-opacity-10 rounded">
+              <small class="text-success">
+                <i class="bi bi-check-circle me-1"></i>
+                Применён купон: <strong>{{ cart.get_coupon.code }}</strong>
+              </small>
+              <form method="post" action="{% url 'cart:remove_coupon' %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-link btn-sm text-danger p-0">Удалить</button>
+              </form>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Правая колонка: итоги и оформление -->
+      <div class="col-lg-4">
+        <div class="cart-summary animate-fade-in-up">
+          <h5 class="mb-3">Ваш заказ</h5>
+          
+          <div class="d-flex justify-content-between mb-2">
+            <span>Товары ({{ cart.get_total_quantity }})</span>
+            <span>{{ cart.get_subtotal_price|floatformat:0 }} ₽</span>
+          </div>
+          
+          {% if cart.get_discount_amount > 0 %}
+            <div class="d-flex justify-content-between mb-2 text-success">
+              <span>Скидка</span>
+              <span>−{{ cart.get_discount_amount|floatformat:0 }} ₽</span>
+            </div>
+          {% endif %}
+          
+          {% if cart.get_delivery_method %}
+            <div class="d-flex justify-content-between mb-2">
+              <span>Доставка</span>
+              <span>
+                {% if cart.get_delivery_cost > 0 %}
+                  {{ cart.get_delivery_cost|floatformat:0 }} ₽
+                {% else %}
+                  <span class="text-success">Бесплатно</span>
+                {% endif %}
+              </span>
+            </div>
+          {% endif %}
+          
+          <hr>
+          <div class="d-flex justify-content-between mb-3">
+            <span class="fw-bold fs-5">К оплате</span>
+            <span class="fw-bold fs-5">{{ cart.get_final_price|floatformat:0 }} ₽</span>
+          </div>
+          
+          <a href="{% url 'orders:checkout' %}" class="btn btn-primary w-100 btn-lg mb-2">
+            <i class="bi bi-credit-card me-2"></i>Оформить заказ
+          </a>
+          
+          <a href="{% url 'catalog:product_list_all' %}" class="btn btn-outline-secondary w-100 mb-2">
+            <i class="bi bi-arrow-left me-2"></i>Продолжить покупки
+          </a>
+          
+          <form method="post" action="{% url 'cart:clear_cart' %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-link text-danger w-100">
+              <i class="bi bi-trash me-1"></i>Очистить корзину
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  {% else %}
+    <!-- Пустая корзина -->
+    <div class="text-center py-5 bg-white rounded-3 border shadow-sm animate-fade-in-up">
+      <i class="bi bi-cart-x display-1 text-muted d-block mb-3"></i>
+      <h4 class="mb-2">Ваша корзина пуста</h4>
+      <p class="text-secondary mb-4">Добавьте товары из каталога, чтобы оформить заказ</p>
+      <a href="{% url 'catalog:product_list_all' %}" class="btn btn-primary btn-lg">
+        <i class="bi bi-grid me-2"></i>Перейти в каталог
+      </a>
+    </div>
+  {% endif %}
+  
+</div>
+{% endblock %}
