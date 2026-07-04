@@ -3,19 +3,17 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse
+from django.utils import timezone
+from yookassa import Payment as YooPayment
+
 from apps.orders.models import Order
 from .models import Payment
 from .services import YooKassaService
-from django.utils import timezone
-from yookassa import Payment as YooPayment
-from apps.orders.models import Order
 
 logger = logging.getLogger(__name__)
 
-def pay_order(request, order_id):
-    from apps.orders.models import Order
-    from .services import YooKassaService
 
+def pay_order(request, order_id):
     # доступ для владельца (или гостя, если разрешено)
     if request.user.is_authenticated:
         order = get_object_or_404(Order, id=order_id, user=request.user)

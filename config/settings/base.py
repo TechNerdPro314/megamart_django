@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     "apps.reviews",
     "apps.notifications",
     "apps.seo",
+    "apps.comparison",   # добавлено
 ]
 
 MIDDLEWARE = [
@@ -55,7 +56,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "django.middleware.common.BrokenLinkEmailsMiddleware",
+    "django.middleware.locale.LocaleMiddleware",
 ]
 
 # SEO Settings
@@ -79,6 +80,8 @@ TEMPLATES = [
                 'apps.seo.context_processors.seo_tags',
                 'apps.users.context_processors.unread_notifications',
                 'apps.catalog.context_processors.footer_categories',
+                'apps.catalog.context_processors.recently_viewed',    # добавлено
+                'apps.comparison.context_processors.comparison_count', # добавлено
             ],
         },
     },
@@ -138,7 +141,6 @@ EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD")
 EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS")
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
-# Email менеджеров для уведомлений о новых заказах
 MANAGER_EMAILS = env.list("MANAGER_EMAILS", default=["admin@megamart.ru"])
 
 YOOKASSA_SHOP_ID = env("YOOKASSA_SHOP_ID")
@@ -166,35 +168,9 @@ LOGGING = {
     },
 }
 
-# =============================================================================
-# Кодировка и локализация
-# =============================================================================
-
-# Явная установка UTF-8 для ответов
 DEFAULT_CHARSET = 'utf-8'
 FILE_CHARSET = 'utf-8'
 
-# Middleware для принудительной кодировки (добавьте в начало списка)
-MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'django.middleware.locale.LocaleMiddleware',  # ✅ Добавьте эту строку
-] + [m for m in locals().get('MIDDLEWARE', []) if m not in [
-    'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
-]]
-
-# Настройки локализации
 LOCALE_PATHS = [BASE_DIR / 'locale']
 LANGUAGES = [
     ('ru', 'Русский'),

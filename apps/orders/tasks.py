@@ -1,5 +1,6 @@
 from celery import shared_task
-from django.utils import timezone
+from django.core.mail import send_mail
+from django.conf import settings
 import logging
 
 logger = logging.getLogger(__name__)
@@ -7,108 +8,43 @@ logger = logging.getLogger(__name__)
 
 @shared_task
 def send_order_notifications(order_id: int):
-    """
-    Отправить все уведомления после создания заказа
-    
-    1. Подтверждение клиенту
-    2. Уведомление менеджеру
-    
-    Args:
-        order_id: ID заказа
-    """
-    from apps.orders.models import Order
-    from apps.notifications.services import EmailNotificationService
-    from apps.notifications.models import Notification
-    
+    """Отправляет уведомления клиенту и менеджерам."""
+    from .models import Order
+
     try:
         order = Order.objects.select_related("user").get(id=order_id)
-        
-        # 1. Подтверждение клиенту
-        client_sent = EmailNotificationService.send_order_confirmation(order)
-        
-        # Создаем запись в истории уведомлений
-        Notification.objects.create(
-            notification_type="order_confirmation",
-            recipient=order.user,
-            recipient_email=order.customer_email,
-            order=order,
-            subject=f"Заказ #{order.id} подтвержден",
-            message=f"Ваш заказ #{order.id} успешно оформлен",
-            status="sent" if client_sent else "failed",
-            sent_at=timezone.now() if client_sent else None,
+    except Order.DoesNotExist:
+        logger.error(f"Заказ #{order_id} не найден")
+        return
+
+    # Клиенту
+    if order.customer_email:
+        subject = f"Заказ №{order.id} принят"
+        message = (
+            f"Здравствуйте, {order.customer_name or 'покупатель'}!\n\n"
+            f"Ваш заказ №{order.id} на сумму {order.total_amount} руб. успешно создан.\n"
+            f"Статус: {order.get_status_display()}.\n\n"
+            f"Спасибо за покупку!"
         )
-        
-        if client_sent:
+        try:
+            send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [order.customer_email])
             logger.info(f"Подтверждение заказа #{order.id} отправлено клиенту")
-        else:
-            logger.error(f"Не удалось отправить подтверждение заказа #{order.id}")
-        
-        # 2. Уведомление менеджеру
-        manager_sent = EmailNotificationService.send_manager_alert(order)
-        
-        # Создаем запись в истории уведомлений
-        Notification.objects.create(
-            notification_type="manager_alert",
-            recipient_email=getattr(settings, "MANAGER_EMAILS", ["manager@megamart.com"])[0],
-            order=order,
-            subject=f"Новый заказ #{order.id}",
-            message=f"Новый заказ от {order.customer_name}",
-            status="sent" if manager_sent else "failed",
-            sent_at=timezone.now() if manager_sent else None,
-        )
-        
-        if manager_sent:
-            logger.info(f"Уведомление о заказе #{order.id} отправлено менеджеру")
-        else:
-            logger.error(f"Не удалось отправить уведомление о заказе #{order.id}")
-        
-        return {
-            "client_sent": client_sent,
-            "manager_sent": manager_sent,
-        }
-        
-    except Order.DoesNotExist:
-        logger.error(f"Заказ {order_id} не найден")
-        return {"error": "Order not found"}
-    except Exception as e:
-        logger.error(f"Ошибка отправки уведомлений для заказа {order_id}: {e}")
-        return {"error": str(e)}
+        except Exception as e:
+            logger.error(f"Ошибка отправки клиенту: {e}")
 
-
-@shared_task
-def send_status_update_notification(order_id: int, new_status: str):
-    """
-    Отправить уведомление об изменении статуса заказа
-    
-    Args:
-        order_id: ID заказа
-        new_status: Новый статус
-    """
-    from apps.orders.models import Order
-    from apps.notifications.services import EmailNotificationService
-    from apps.notifications.models import Notification
-    
-    try:
-        order = Order.objects.select_related("user").get(id=order_id)
-        
-        sent = EmailNotificationService.send_status_update(order, new_status)
-        
-        Notification.objects.create(
-            notification_type="status_update",
-            recipient=order.user,
-            recipient_email=order.customer_email,
-            order=order,
-            subject=f"Статус заказа #{order.id} изменен",
-            message=f"Ваш заказ #{order.id} теперь имеет статус: {order.get_status_display()}",
-            status="sent" if sent else "failed",
-            sent_at=timezone.now() if sent else None,
+    # Менеджерам
+    manager_emails = getattr(settings, "MANAGER_EMAILS", [])
+    if manager_emails:
+        subject = f"Новый заказ №{order.id}"
+        message = (
+            f"Поступил заказ №{order.id} от {order.customer_name or 'неизвестного'}.\n"
+            f"Сумма: {order.total_amount} руб.\n"
+            f"Доставка: {order.get_delivery_method_display() or order.delivery_method}\n"
+            f"Телефон: {order.customer_phone}\n"
+            f"Email: {order.customer_email}"
         )
-        
-        return {"sent": sent}
-        
-    except Order.DoesNotExist:
-        logger.error(f"Заказ {order_id} не найден")
-        return {"error": "Order not found"}
-    except Exception as e:
-        logger.error(f"Ошибка отправки уведомления о статусе {order_id}: {e}")
-        return {"error": str(e)}
+        try:
+            send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, manager_emails)
+            logger.info(f"Уведомление менеджерам отправлено")
+        except Exception as e:
+            logger.error(f"Ошибка отправки менеджерам: {e}")

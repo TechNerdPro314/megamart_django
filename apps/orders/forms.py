@@ -1,17 +1,8 @@
 from django import forms
 from .models import Order
-
-def validate_address(value):
-    """Проверяет, что адрес содержит и буквы, и цифры, и имеет длину не менее 10 символов."""
-    if len(value.strip()) < 10:
-        raise forms.ValidationError("Адрес должен быть не менее 10 символов.")
-    if not any(ch.isalpha() for ch in value):
-        raise forms.ValidationError("Адрес должен содержать название улицы (буквы).")
-    if not any(ch.isdigit() for ch in value):
-        raise forms.ValidationError("Адрес должен содержать номер дома (цифры).")
+from apps.cart.services import DELIVERY_OPTIONS
 
 class CheckoutForm(forms.ModelForm):
-    # Валидатор убран, проверка в clean_customer_phone
     customer_phone = forms.CharField(
         max_length=18,
         widget=forms.TextInput(attrs={
@@ -21,15 +12,20 @@ class CheckoutForm(forms.ModelForm):
         })
     )
     delivery_address = forms.CharField(
-        required=True,
-        validators=[validate_address],
+        required=False,  # сделаем необязательным, если самовывоз
         widget=forms.Textarea(attrs={
             'rows': 3,
-            'placeholder': 'Город, улица, дом, квартира (например, г. Москва, ул. Тверская, д. 15, кв. 7)',
+            'placeholder': 'Город, улица, дом, квартира',
             'class': 'form-control',
         })
     )
     delivery_method = forms.CharField(widget=forms.HiddenInput(), required=True)
+    payment_method = forms.ChoiceField(
+        choices=Order.PAYMENT_METHODS,
+        widget=forms.RadioSelect(),
+        initial='online',
+        label='Способ оплаты'
+    )
 
     class Meta:
         model = Order
@@ -39,21 +35,38 @@ class CheckoutForm(forms.ModelForm):
             'customer_phone',
             'delivery_address',
             'comment',
+            'payment_method',
         ]
 
     def clean_customer_phone(self):
         phone = self.cleaned_data.get('customer_phone', '')
-        # Убираем всё, кроме цифр
         digits = ''.join(ch for ch in phone if ch.isdigit())
-        # Проверяем, что номер начинается с 7 или 8 и содержит 11 цифр
         if len(digits) != 11 or digits[0] not in ('7', '8'):
             raise forms.ValidationError("Некорректный номер телефона.")
-        # Возвращаем только цифры (можно преобразовать 8 в 7 при необходимости)
         return digits
 
     def clean_delivery_method(self):
         method = self.cleaned_data['delivery_method']
-        from apps.cart.services import DELIVERY_OPTIONS
         if method not in DELIVERY_OPTIONS:
             raise forms.ValidationError("Выберите способ доставки")
         return method
+
+    def clean(self):
+        cleaned = super().clean()
+        method = cleaned.get('payment_method')
+        delivery = cleaned.get('delivery_method')
+        address = cleaned.get('delivery_address', '')
+
+        # Наличные только при курьерской доставке и адрес обязателен
+        if method == 'cash':
+            if delivery != 'courier':
+                self.add_error('payment_method', 'Наличные доступны только при курьерской доставке.')
+            if not address.strip():
+                self.add_error('delivery_address', 'Укажите адрес доставки.')
+        # Оплата в магазине только при самовывозе
+        if method == 'store' and delivery != 'pickup':
+            self.add_error('payment_method', 'Оплата в магазине доступна только при самовывозе.')
+        # Для доставки курьером адрес обязателен
+        if delivery == 'courier' and not address.strip():
+            self.add_error('delivery_address', 'Введите адрес доставки.')
+        return cleaned

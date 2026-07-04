@@ -77,6 +77,16 @@
             <a href="{% url 'users:register' %}" class="btn btn-primary btn-sm d-none d-lg-inline-flex">Регистрация</a>
           {% endif %}
           
+          <!-- Сравнение -->
+          <a href="{% url 'comparison:compare' %}" class="btn btn-outline-secondary btn-sm position-relative" title="Сравнение товаров">
+            <i class="bi bi-bar-chart"></i>
+            {% if comparison_count %}
+              <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.7rem;">
+                {{ comparison_count }}
+              </span>
+            {% endif %}
+          </a>
+          
           <!-- Cart -->
           <a href="{% url 'cart:cart_detail' %}" class="btn btn-primary position-relative" aria-label="Корзина">
             <i class="bi bi-cart3"></i>

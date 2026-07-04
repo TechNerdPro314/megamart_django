@@ -4,9 +4,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from health_check.views import MainView
 from django.views.generic import TemplateView
-from apps.info.views import PromoListView 
-from apps.info.views import DeliveryView
-from apps.info.views import BlogListView, BlogDetailView
+from apps.info.views import PromoListView, DeliveryView, BlogListView, BlogDetailView
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -14,11 +12,10 @@ urlpatterns = [
 
     path("", include("apps.catalog.urls")),
     path('info/terms/', TemplateView.as_view(template_name='info/terms.html'), name='info_terms'),
-    path('payments/', include('apps.payments.urls')),
     path("users/", include("apps.users.urls")),
     path("cart/", include("apps.cart.urls")),
     path("orders/", include("apps.orders.urls")),
-    path("payments/", include("apps.payments.urls")),
+    path("payments/", include("apps.payments.urls")),        # единственный раз
     path("promotions/", include("apps.promotions.urls")),
     path("reviews/", include("apps.reviews.urls")),
     path("importer/", include("apps.importer.urls")),
@@ -29,7 +26,7 @@ urlpatterns = [
     path('info/blog/', BlogListView.as_view(), name='info_blog'),
     path('info/blog/<slug:slug>/', BlogDetailView.as_view(), name='info_blog_detail'),
     path('info/privacy/', TemplateView.as_view(template_name='info/privacy_policy.html'), name='info_privacy'),
-    # SEO routes
+    path("comparison/", include("apps.comparison.urls")),   # добавлено
     path("", include("apps.seo.urls")),
 ]
 

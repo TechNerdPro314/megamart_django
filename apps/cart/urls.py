@@ -1,3 +1,4 @@
+# apps/cart/urls.py
 from django.urls import path
 from .views import (
     cart_detail_view,
@@ -8,6 +9,7 @@ from .views import (
     remove_coupon_view,
     set_delivery_view,
     clear_cart_view,
+    quick_order_view,
 )
 
 app_name = 'cart'
@@ -21,4 +23,5 @@ urlpatterns = [
     path("coupon/remove/", remove_coupon_view, name="remove_coupon"),
     path("delivery/", set_delivery_view, name="set_delivery"),
     path("clear/", clear_cart_view, name="clear_cart"),
+    path("quick-order/<int:product_id>/", quick_order_view, name="quick_order"),
 ]

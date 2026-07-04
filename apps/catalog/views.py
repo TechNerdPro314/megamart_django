@@ -4,6 +4,7 @@ from django.shortcuts import get_object_or_404
 from .models import Product, Category, Brand, Attribute, ProductAttributeValue
 from apps.seo.services import SEOContextProcessor
 from apps.reviews.forms import ReviewForm
+from .models import Product
 
 
 class HomePageView(TemplateView):
@@ -235,6 +236,15 @@ class ProductDetailView(DetailView):
             status="approved"
         ).select_related("user").order_by("-created_at")
 
+        product_ids = self.request.session.get('recently_viewed', [])
+        if self.object.id not in product_ids:
+            product_ids.insert(0, self.object.id)
+            self.request.session['recently_viewed'] = product_ids[:20]
+
+        context['recently_viewed_products'] = Product.objects.filter(
+            id__in=product_ids, is_active=True
+        ).exclude(id=self.object.id)[:8]
+        
         # Форма добавления отзыва
         context["review_form"] = ReviewForm()
 

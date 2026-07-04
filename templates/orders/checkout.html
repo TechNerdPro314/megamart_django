@@ -85,12 +85,12 @@
       </div>
     </div>
 
-    <!-- Правая колонка: контактные данные + кнопка -->
+    <!-- Правая колонка: контактные данные + способ оплаты + кнопка -->
     <div class="col-lg-5">
       <div class="card shadow-sm">
         <div class="card-header bg-white d-flex align-items-center">
           <span class="badge bg-primary rounded-pill me-3 fs-6">3</span>
-          <h5 class="mb-0 fw-semibold">Контактные данные</h5>
+          <h5 class="mb-0 fw-semibold">Контактные данные и оплата</h5>
         </div>
         <div class="card-body">
           <form method="post" id="checkout-form">
@@ -112,7 +112,6 @@
 {% block extra_css %}
 {{ block.super }}
 <style>
-  /* Компактные текстовые поля для адреса и комментария */
   #id_delivery_address,
   #id_comment {
     height: 80px !important;
